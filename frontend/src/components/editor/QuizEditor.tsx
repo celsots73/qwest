@@ -39,6 +39,11 @@ function newQuestion(type: QuestionType, order: number): Question {
     { id: crypto.randomUUID(), text: '', isCorrect: false },
     { id: crypto.randomUUID(), text: '', isCorrect: false },
   ]};
+  if (type === 'PUZZLE') return { ...base, options: [
+    { id: crypto.randomUUID(), text: '', isCorrect: false },
+    { id: crypto.randomUUID(), text: '', isCorrect: false },
+    { id: crypto.randomUUID(), text: '', isCorrect: false },
+  ]};
   return { ...base, options: [{ id: crypto.randomUUID(), text: '', isCorrect: false }] };
 }
 

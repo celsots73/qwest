@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
@@ -19,6 +19,8 @@ export default function PlayerGamePage() {
   const store = useGameStore();
   const [answered, setAnswered] = useState(false);
   const [selectedValue, setSelectedValue] = useState<unknown>(null);
+  const [selectedMultiple, setSelectedMultiple] = useState<string[]>([]);
+  const selectedMultipleRef = useRef<string[]>([]);
   const [sliderVal, setSliderVal] = useState(50);
   const [openText, setOpenText] = useState('');
   const [puzzleOrder, setPuzzleOrder] = useState<string[]>([]);
@@ -30,16 +32,29 @@ export default function PlayerGamePage() {
 
   const { remaining, pct } = useTimer(
     store.currentQuestion?.timeLimit ?? 30,
-    () => { if (!answered && store.phase === 'question') handleSubmit(null); },
+    () => {
+      if (!answered && store.phase === 'question') {
+        const multi = selectedMultipleRef.current;
+        handleSubmit(multi.length > 0 ? multi : null);
+      }
+    },
   );
 
   useEffect(() => {
     if (store.phase === 'question') {
       setAnswered(false);
       setSelectedValue(null);
+      setSelectedMultiple([]);
+      selectedMultipleRef.current = [];
       setOpenText('');
       if (store.currentQuestion?.question.options) {
-        setPuzzleOrder(store.currentQuestion.question.options.map(o => o.id));
+        // shuffle puzzle options so the player has to actually arrange them
+        const ids = store.currentQuestion.question.options.map(o => o.id);
+        for (let i = ids.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [ids[i], ids[j]] = [ids[j], ids[i]];
+        }
+        setPuzzleOrder(ids);
       }
     }
   }, [store.currentQuestion?.index]);
@@ -51,15 +66,18 @@ export default function PlayerGamePage() {
     submitAnswer(finalValue);
   };
 
+  const toggleMultiple = (optId: string) => {
+    setSelectedMultiple(prev => {
+      const next = prev.includes(optId) ? prev.filter(id => id !== optId) : [...prev, optId];
+      selectedMultipleRef.current = next;
+      return next;
+    });
+  };
+
   const handleChoice = (optId: string) => {
     const q = store.currentQuestion?.question;
     if (!q || answered) return;
-    if (q.type === 'MULTIPLE_CHOICE') {
-      setSelectedValue(optId);
-      handleSubmit([optId]);
-    } else {
-      handleSubmit([optId]);
-    }
+    handleSubmit([optId]);
   };
 
   if (store.phase === 'podium') return <Podium leaderboard={store.leaderboard} me={store.myParticipant} />;
@@ -121,8 +139,36 @@ export default function PlayerGamePage() {
             </div>
           ) : (
             <>
-              {/* Multiple choice / True-False */}
-              {(q.question.type === 'MULTIPLE_CHOICE' || q.question.type === 'TRUE_FALSE') && (
+              {/* Multiple choice — multi-select + confirm */}
+              {q.question.type === 'MULTIPLE_CHOICE' && (
+                <div className="flex flex-col gap-3 flex-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    {q.question.options.map((opt, i) => (
+                      <motion.button
+                        key={opt.id}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => toggleMultiple(opt.id)}
+                        className={clsx(
+                          OPT_CLASSES[i],
+                          'rounded-2xl p-4 text-white font-bold text-center flex flex-col items-center justify-center gap-2 min-h-[90px] shadow-lg transition-all',
+                          selectedMultiple.includes(opt.id) && 'ring-4 ring-white',
+                        )}
+                      >
+                        <span className="text-2xl">{OPT_SHAPES[i]}</span>
+                        <span className="text-sm leading-tight">{opt.text}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                  {selectedMultiple.length > 0 && (
+                    <button onClick={() => handleSubmit(selectedMultiple)} className="btn-primary py-4 text-lg">
+                      Confirmar ({selectedMultiple.length} selecionada{selectedMultiple.length !== 1 ? 's' : ''})
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* True/False — single click */}
+              {q.question.type === 'TRUE_FALSE' && (
                 <div className="grid grid-cols-2 gap-3 flex-1">
                   {q.question.options.map((opt, i) => (
                     <motion.button

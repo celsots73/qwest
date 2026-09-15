@@ -7,7 +7,7 @@ import { connectSocket } from '@/lib/socket';
 type Phase = 'lobby' | 'question' | 'leaderboard' | 'podium';
 
 interface VoteUpdate {
-  type: 'MULTIPLE_CHOICE' | 'OPEN_TEXT' | 'SLIDER';
+  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'OPEN_TEXT' | 'SLIDER';
   distribution?: Array<{ id: string; text: string; count: number }>;
   wordFrequency?: Record<string, number>;
   avg?: number; min?: number; max?: number;
@@ -151,8 +151,7 @@ export default function LivePage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (phase === 'question' && question) {
     const q = question.question;
-    const isPollType = q.type === 'MULTIPLE_CHOICE' || q.type === 'OPEN_TEXT' || q.type === 'SLIDER';
-    const maxVotes = voteUpdate?.distribution ? Math.max(...voteUpdate.distribution.map(o => o.count), 1) : 1;
+    const isPollType = q.type === 'MULTIPLE_CHOICE' || q.type === 'TRUE_FALSE' || q.type === 'OPEN_TEXT' || q.type === 'SLIDER';
 
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col">
@@ -173,8 +172,8 @@ export default function LivePage() {
           <h2 className="text-3xl md:text-5xl font-black text-center">{q.text}</h2>
 
           <AnimatePresence mode="wait">
-            {/* MULTIPLE_CHOICE bars */}
-            {q.type === 'MULTIPLE_CHOICE' && (
+            {/* MULTIPLE_CHOICE & TRUE_FALSE bars */}
+            {(q.type === 'MULTIPLE_CHOICE' || q.type === 'TRUE_FALSE') && (
               <motion.div key="mc" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full space-y-3">
                 {q.options.map((opt: any, i: number) => {
                   const count = voteUpdate?.distribution?.find((d: any) => d.id === opt.id)?.count ?? 0;
@@ -185,9 +184,9 @@ export default function LivePage() {
                         <span className="font-bold">{opt.text}</span>
                         <span className="text-gray-400">{count} voto{count !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="h-8 bg-gray-800 rounded-xl overflow-hidden">
+                      <div className="h-10 bg-gray-800 rounded-xl overflow-hidden">
                         <motion.div
-                          className="h-full rounded-xl flex items-center px-3"
+                          className="h-full rounded-xl"
                           style={{ backgroundColor: OPT_COLORS[i], width: `${pct}%` }}
                           animate={{ width: `${pct}%` }}
                           transition={{ duration: 0.4 }}
@@ -196,6 +195,7 @@ export default function LivePage() {
                     </div>
                   );
                 })}
+                <p className="text-gray-500 text-sm text-right">{voteUpdate?.totalAnswers ?? 0} resposta{(voteUpdate?.totalAnswers ?? 0) !== 1 ? 's' : ''}</p>
               </motion.div>
             )}
 
@@ -209,22 +209,33 @@ export default function LivePage() {
               </motion.div>
             )}
 
-            {/* SLIDER gauge */}
+            {/* SLIDER — visual gauge + stats */}
             {q.type === 'SLIDER' && (
-              <motion.div key="sl" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full text-center space-y-4">
-                <div className="text-8xl font-black text-brand-400">
-                  {voteUpdate?.avg ?? '—'}
+              <motion.div key="sl" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full space-y-6">
+                <div className="text-center">
+                  <div className="text-8xl font-black text-brand-400">{voteUpdate?.avg ?? '—'}</div>
+                  <p className="text-gray-400 mt-1">média atual</p>
                 </div>
-                <p className="text-gray-400">média atual</p>
                 {voteUpdate && (
-                  <p className="text-sm text-gray-500">
-                    min {voteUpdate.min} · max {voteUpdate.max} · {voteUpdate.totalAnswers} respostas
-                  </p>
+                  <>
+                    <div className="relative h-6 bg-gray-800 rounded-full overflow-hidden">
+                      <motion.div
+                        className="absolute top-0 left-0 h-full bg-brand-500 rounded-full"
+                        animate={{ width: `${voteUpdate.avg ?? 0}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-400">
+                      <span>0 · mín {voteUpdate.min}</span>
+                      <span>{voteUpdate.totalAnswers} respostas</span>
+                      <span>máx {voteUpdate.max} · 100</span>
+                    </div>
+                  </>
                 )}
               </motion.div>
             )}
 
-            {/* TRUE_FALSE / PUZZLE — just show options */}
+            {/* PUZZLE — just show options */}
             {!isPollType && (
               <motion.div key="quiz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-4 w-full">
                 {q.options.map((opt: any, i: number) => (

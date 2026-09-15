@@ -129,22 +129,24 @@ export function registerEvents(io: Server, socket: Socket) {
     // keep legacy host-only event for backward compat
     io.to(room.hostSocketId).emit('host:answer_count', { count: newAnswerCount, total: room.totalParticipants });
 
-    // for poll questions, broadcast live vote distribution
-    if (isPoll) {
+    // broadcast live vote distribution for all visual question types
+    const needsVoteUpdate = isPoll || question.type === 'TRUE_FALSE';
+    if (needsVoteUpdate) {
       const sessionAnswers = await prisma.answer.findMany({
         where: { questionId: question.id, participant: { sessionId: room.sessionId } },
         select: { value: true },
       });
 
-      if (question.type === 'MULTIPLE_CHOICE') {
-        const opts = (question.options as any[]);
+      const opts = (question.options as any[]);
+
+      if (question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE') {
         const counts: Record<string, number> = {};
         for (const a of sessionAnswers) {
           const ids: string[] = Array.isArray(a.value) ? (a.value as string[]) : [String(a.value)];
           for (const id of ids) counts[id] = (counts[id] || 0) + 1;
         }
         io.to(pin).emit('room:vote_update', {
-          type: 'MULTIPLE_CHOICE',
+          type: question.type,
           distribution: opts.map((o: any) => ({ id: o.id, text: o.text, count: counts[o.id] || 0 })),
           totalAnswers: sessionAnswers.length,
         });
@@ -158,7 +160,9 @@ export function registerEvents(io: Server, socket: Socket) {
       } else if (question.type === 'SLIDER') {
         const vals = sessionAnswers.map(a => Number(a.value)).filter(v => !isNaN(v));
         const avg = vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : 0;
-        io.to(pin).emit('room:vote_update', { type: 'SLIDER', avg, min: Math.min(...vals), max: Math.max(...vals), totalAnswers: vals.length });
+        const safeMin = vals.length ? Math.min(...vals) : 0;
+        const safeMax = vals.length ? Math.max(...vals) : 0;
+        io.to(pin).emit('room:vote_update', { type: 'SLIDER', avg, min: safeMin, max: safeMax, totalAnswers: vals.length });
       }
     }
   });

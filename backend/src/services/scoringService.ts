@@ -76,7 +76,8 @@ export function isAnswerCorrect(
       return null; // poll mode — records value, no correct/wrong
     }
     case 'PUZZLE': {
-      const correct = options.filter(o => o.isCorrect).map(o => o.id);
+      // stored order IS the correct order — isCorrect not used
+      const correct = options.map(o => o.id);
       return checkPuzzleAnswer(value as string[], correct);
     }
     default:
