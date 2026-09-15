@@ -1,9 +1,5 @@
 {
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@qwest_api_url",
-    "NEXT_PUBLIC_WS_URL": "@qwest_ws_url"
-  }
+  "outputDirectory": ".next"
 }
