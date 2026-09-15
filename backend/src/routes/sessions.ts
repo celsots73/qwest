@@ -51,6 +51,14 @@ router.get('/:id/results', requireAuth, async (req: AuthRequest, res) => {
   res.json(session);
 });
 
+// Delete session (host only)
+router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
+  const session = await prisma.quizSession.findFirst({ where: { id: req.params.id, hostId: req.userId } });
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+  await prisma.quizSession.delete({ where: { id: req.params.id } });
+  res.status(204).send();
+});
+
 // List host's sessions
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
   const sessions = await prisma.quizSession.findMany({

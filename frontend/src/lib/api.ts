@@ -47,6 +47,7 @@ export const sessionApi = {
   byPin: (pin: string) => api.get(`/sessions/pin/${pin}`).then(r => r.data),
   results: (id: string) => api.get(`/sessions/${id}/results`).then(r => r.data),
   list: () => api.get('/sessions').then(r => r.data),
+  remove: (id: string) => api.delete(`/sessions/${id}`),
 };
 
 export const reportApi = {

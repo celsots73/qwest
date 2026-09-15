@@ -8,6 +8,7 @@ export function useHostSocket(pin: string) {
   const socket = connectSocket();
 
   useEffect(() => {
+    store.reset();
     socket.emit('host:join', { pin });
 
     socket.on('game:question', (data) => store.setQuestion(data));
@@ -37,6 +38,7 @@ export function usePlayerSocket(pin: string, nickname: string, avatar: string) {
   const socket = connectSocket();
 
   useEffect(() => {
+    store.reset();
     socket.emit('player:join', { pin, nickname, avatar });
 
     socket.on('player:joined', ({ participant }) => store.setMyParticipant(participant));

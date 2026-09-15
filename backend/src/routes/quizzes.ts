@@ -100,6 +100,7 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
   const quiz = await prisma.quiz.findFirst({ where: { id: req.params.id, authorId: req.userId } });
   if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
 
+  await prisma.quizSession.deleteMany({ where: { quizId: req.params.id } });
   await prisma.quiz.delete({ where: { id: req.params.id } });
   res.status(204).send();
 });

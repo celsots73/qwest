@@ -39,6 +39,11 @@ export default function DashboardPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['quizzes'] }); toast.success('Quiz duplicado'); },
   });
 
+  const deleteSessionMutation = useMutation({
+    mutationFn: sessionApi.remove,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sessions'] }); toast.success('Sessão excluída'); },
+  });
+
   const startMutation = useMutation({
     mutationFn: (quizId: string) => sessionApi.create(quizId),
     onSuccess: (session) => router.push(`/quiz/${session.quizId}/present?session=${session.id}&pin=${session.pin}`),
@@ -137,11 +142,19 @@ export default function DashboardPage() {
                     <span className="font-medium text-sm">{s.quiz?.title || 'Quiz'}</span>
                     <span className="text-xs text-gray-500 ml-3">PIN {s.pin} · {s.status}</span>
                   </div>
-                  {s.status === 'FINISHED' && (
-                    <Link href={`/dashboard/analytics?session=${s.id}`} className="btn-ghost py-1.5 px-3 text-xs flex items-center gap-1">
-                      <BarChart3 className="w-3.5 h-3.5" /> Análises
-                    </Link>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {s.status === 'FINISHED' && (
+                      <Link href={`/dashboard/analytics?session=${s.id}`} className="btn-ghost py-1.5 px-3 text-xs flex items-center gap-1">
+                        <BarChart3 className="w-3.5 h-3.5" /> Análises
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => { if (confirm('Excluir sessão?')) deleteSessionMutation.mutate(s.id); }}
+                      className="btn-ghost py-1.5 px-2 text-xs text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
