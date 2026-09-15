@@ -105,6 +105,9 @@ export default function PresentPage() {
           <button onClick={() => endQuiz()} className="flex items-center gap-2 text-gray-500 hover:text-red-400 transition-colors text-sm">
             <StopCircle className="w-4 h-4" /> Encerrar
           </button>
+          <Link href={`/live/${pin}`} target="_blank" className="text-gray-500 hover:text-brand-400 text-xs transition-colors">
+            📺 Ao vivo
+          </Link>
           <button onClick={nextQuestion} className="btn-primary flex items-center gap-2">
             Avançar <ChevronRight className="w-4 h-4" />
           </button>
