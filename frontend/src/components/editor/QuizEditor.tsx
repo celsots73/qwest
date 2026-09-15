@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Save, ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Question, QuestionType } from '@/types';
 import QuestionCard from './QuestionCard';
 import ThemeEditor, { QuizTheme } from './ThemeEditor';
@@ -62,7 +63,15 @@ export default function QuizEditor({ quizId, initialData, onSave, isSaving, onRe
   const removeQuestion = (index: number) =>
     setQuestions(qs => qs.filter((_, i) => i !== index).map((q, i) => ({ ...q, order: i })));
 
-  const handleSave = () => onSave({ title, description, isPublic, randomizeQ, randomizeA, questions, theme });
+  const handleSave = () => {
+    const needsAnswer = ['MULTIPLE_CHOICE', 'TRUE_FALSE'];
+    const invalid = questions.findIndex(q => needsAnswer.includes(q.type) && !q.options.some(o => o.isCorrect));
+    if (invalid !== -1) {
+      toast.error(`Pergunta #${invalid + 1}: marque a resposta correta antes de salvar.`);
+      return;
+    }
+    onSave({ title, description, isPublic, randomizeQ, randomizeA, questions, theme });
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">

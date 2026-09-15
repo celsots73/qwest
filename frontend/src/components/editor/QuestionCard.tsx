@@ -40,8 +40,11 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
     update({ options: question.options.filter((_, idx) => idx !== i) });
   };
 
+  const missingAnswer = (question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE')
+    && !question.options.some(o => o.isCorrect);
+
   return (
-    <div className="card space-y-4">
+    <div className={clsx('card space-y-4', missingAnswer && 'border border-yellow-500/60')}>
       {/* Header */}
       <div className="flex items-center gap-3">
         <span className="text-gray-500 text-sm font-mono min-w-[2rem]">#{index + 1}</span>
@@ -71,6 +74,10 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
         rows={2}
         className="input-field resize-none font-medium"
       />
+
+      {missingAnswer && (
+        <p className="text-yellow-400 text-xs">Clique no checkbox ao lado de uma opção para marcar a resposta correta.</p>
+      )}
 
       {/* Options */}
       {(question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE') && (
