@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { PrismaClient, QuestionType } from '@prisma/client';
+import { PrismaClient, QuestionType, Prisma } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -117,7 +117,7 @@ router.post('/:id/duplicate', requireAuth, async (req: AuthRequest, res) => {
     data: {
       ...data,
       title: `${data.title} (cópia)`,
-      questions: { create: questions.map(({ id: _id, quizId: _qid, ...q }) => q) },
+      questions: { create: questions.map(({ id: _id, quizId: _qid, ...q }) => ({ ...q, options: q.options as Prisma.InputJsonValue })) },
     },
     include: { questions: true },
   });
