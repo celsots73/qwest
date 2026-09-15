@@ -112,11 +112,12 @@ router.post('/:id/duplicate', requireAuth, async (req: AuthRequest, res) => {
   });
   if (!original) return res.status(404).json({ error: 'Quiz not found' });
 
-  const { id, createdAt, updatedAt, questions, ...data } = original;
+  const { id, createdAt, updatedAt, questions, theme, ...data } = original;
   const copy = await prisma.quiz.create({
     data: {
       ...data,
       title: `${data.title} (cópia)`,
+      theme: theme === null ? Prisma.DbNull : (theme as Prisma.InputJsonValue),
       questions: { create: questions.map(({ id: _id, quizId: _qid, ...q }) => ({ ...q, options: q.options as Prisma.InputJsonValue })) },
     },
     include: { questions: true },
