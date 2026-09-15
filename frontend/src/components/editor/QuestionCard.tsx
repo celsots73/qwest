@@ -40,7 +40,7 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
     update({ options: question.options.filter((_, idx) => idx !== i) });
   };
 
-  const missingAnswer = (question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE')
+  const missingAnswer = question.type === 'TRUE_FALSE'
     && !question.options.some(o => o.isCorrect);
 
   return (
@@ -79,8 +79,38 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
         <p className="text-yellow-400 text-xs">Clique no checkbox ao lado de uma opção para marcar a resposta correta.</p>
       )}
 
-      {/* Options */}
-      {(question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE') && (
+      {/* Options — MULTIPLE_CHOICE: poll mode, no correct answer */}
+      {question.type === 'MULTIPLE_CHOICE' && (
+        <div className="space-y-2">
+          <p className="text-xs text-blue-400">Enquete — apenas registra a escolha, sem resposta certa.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {question.options.map((opt, i) => (
+              <div key={opt.id} className="flex items-center gap-2 rounded-xl px-3 py-2 border-2 border-white/10 bg-gray-800">
+                <div className={clsx('w-6 h-6 rounded-md flex-shrink-0', OPT_COLORS[i])} />
+                <input
+                  value={opt.text}
+                  onChange={e => updateOption(i, { text: e.target.value })}
+                  placeholder={`Opção ${i + 1}`}
+                  className="flex-1 bg-transparent focus:outline-none text-sm"
+                />
+                {question.options.length > 2 && (
+                  <button onClick={() => removeOption(i)} className="text-gray-500 hover:text-red-400">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {question.options.length < 6 && (
+              <button onClick={addOption} className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 hover:border-brand-500 py-3 text-gray-400 hover:text-white transition-colors text-sm">
+                <Plus className="w-4 h-4" /> Adicionar opção
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Options — TRUE_FALSE: quiz mode, must mark correct answer */}
+      {question.type === 'TRUE_FALSE' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {question.options.map((opt, i) => (
             <div
@@ -89,18 +119,10 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
                 'flex items-center gap-2 rounded-xl px-3 py-2 border-2 transition-all cursor-pointer',
                 opt.isCorrect ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-gray-800',
               )}
+              onClick={() => toggleCorrect(i)}
             >
-              <div
-                className={clsx('w-6 h-6 rounded-md flex-shrink-0', OPT_COLORS[i])}
-                onClick={() => toggleCorrect(i)}
-              />
-              <input
-                value={opt.text}
-                onChange={e => updateOption(i, { text: e.target.value })}
-                placeholder={`Opção ${i + 1}`}
-                className="flex-1 bg-transparent focus:outline-none text-sm"
-                disabled={question.type === 'TRUE_FALSE'}
-              />
+              <div className={clsx('w-6 h-6 rounded-md flex-shrink-0', OPT_COLORS[i])} />
+              <span className="flex-1 text-sm">{opt.text}</span>
               <input
                 type="checkbox"
                 checked={!!opt.isCorrect}
@@ -108,18 +130,8 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
                 className="accent-green-500 w-4 h-4 flex-shrink-0"
                 title="Marcar como correta"
               />
-              {question.type === 'MULTIPLE_CHOICE' && question.options.length > 2 && (
-                <button onClick={() => removeOption(i)} className="text-gray-500 hover:text-red-400">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
           ))}
-          {question.type === 'MULTIPLE_CHOICE' && question.options.length < 6 && (
-            <button onClick={addOption} className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 hover:border-brand-500 py-3 text-gray-400 hover:text-white transition-colors text-sm">
-              <Plus className="w-4 h-4" /> Adicionar opção
-            </button>
-          )}
         </div>
       )}
 

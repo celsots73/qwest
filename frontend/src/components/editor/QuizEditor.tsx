@@ -64,7 +64,7 @@ export default function QuizEditor({ quizId, initialData, onSave, isSaving, onRe
     setQuestions(qs => qs.filter((_, i) => i !== index).map((q, i) => ({ ...q, order: i })));
 
   const handleSave = () => {
-    const needsAnswer = ['MULTIPLE_CHOICE', 'TRUE_FALSE'];
+    const needsAnswer = ['TRUE_FALSE'];
     const invalid = questions.findIndex(q => needsAnswer.includes(q.type) && !q.options.some(o => o.isCorrect));
     if (invalid !== -1) {
       toast.error(`Pergunta #${invalid + 1}: marque a resposta correta antes de salvar.`);

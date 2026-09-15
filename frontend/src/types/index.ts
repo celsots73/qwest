@@ -65,7 +65,7 @@ export interface GameQuestion {
 }
 
 export interface AnswerResult {
-  correct: boolean;
+  correct: boolean | null; // null = poll question (no correct/wrong)
   pointsEarned: number;
   comboBonus: number;
   timeBonus: number;
