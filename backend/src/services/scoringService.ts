@@ -48,14 +48,19 @@ export function checkPuzzleAnswer(given: string[], correct: string[]): boolean {
   return given.length === correct.length && given.every((v, i) => v === correct[i]);
 }
 
-// Validate any question type
+// Validate any question type. Returns null for poll questions (MULTIPLE_CHOICE with no correct answer).
 export function isAnswerCorrect(
   type: string,
   value: unknown,
   options: Array<{ id: string; isCorrect: boolean }>,
-): boolean {
+): boolean | null {
   switch (type) {
-    case 'MULTIPLE_CHOICE':
+    case 'MULTIPLE_CHOICE': {
+      const correct = options.filter(o => o.isCorrect).map(o => o.id);
+      if (correct.length === 0) return null; // poll mode
+      const selected = Array.isArray(value) ? value : [value];
+      return selected.length === correct.length && selected.every(s => correct.includes(s as string));
+    }
     case 'TRUE_FALSE': {
       const selected = Array.isArray(value) ? value : [value];
       const correct = options.filter(o => o.isCorrect).map(o => o.id);

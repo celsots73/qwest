@@ -76,18 +76,16 @@ export function registerEvents(io: Server, socket: Socket) {
     const question = session.quiz.questions[room.currentQ];
     const responseTimeMs = Date.now() - room.questionStartedAt;
 
-    const correct = isAnswerCorrect(question.type, value, question.options as any);
+    const correctResult = isAnswerCorrect(question.type, value, question.options as any);
+    const isPoll = correctResult === null;
+    const correct = isPoll ? false : correctResult;
 
     const participant = await prisma.participant.findUnique({ where: { id: participantId } });
     if (!participant) return;
 
-    const { pointsEarned, newStreak, comboBonus, timeBonus } = calculateScore(
-      correct,
-      responseTimeMs,
-      question.timeLimit * 1000,
-      participant.streak,
-      question.pointsBase,
-    );
+    const { pointsEarned, newStreak, comboBonus, timeBonus } = isPoll
+      ? { pointsEarned: 0, newStreak: participant.streak, comboBonus: 0, timeBonus: 0 }
+      : calculateScore(correct, responseTimeMs, question.timeLimit * 1000, participant.streak, question.pointsBase);
 
     await prisma.$transaction([
       prisma.answer.create({
@@ -109,7 +107,10 @@ export function registerEvents(io: Server, socket: Socket) {
     const newAnswerCount = room.answerCount + 1;
     roomManager.update(pin, { answerCount: newAnswerCount });
 
-    socket.emit('player:answer_result', { correct, pointsEarned, comboBonus, timeBonus, newStreak });
+    socket.emit('player:answer_result', {
+      correct: isPoll ? null : correct,
+      pointsEarned, comboBonus, timeBonus, newStreak,
+    });
 
     // notify host of live answer count
     io.to(room.hostSocketId).emit('host:answer_count', {
