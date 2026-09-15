@@ -140,25 +140,7 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
       )}
 
       {question.type === 'SLIDER' && (
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Mínimo</label>
-            <input type="number" placeholder="0" className="input-field" />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Máximo</label>
-            <input type="number" placeholder="100" className="input-field" />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Valor correto</label>
-            <input
-              type="number"
-              value={question.options[0]?.text || ''}
-              onChange={e => update({ options: [{ ...question.options[0], text: e.target.value, isCorrect: true }] })}
-              className="input-field"
-            />
-          </div>
-        </div>
+        <p className="text-xs text-blue-400">Enquete de valor — os respondentes movem o slider livremente (0–100). Aparece como média no dashboard.</p>
       )}
 
       {question.type === 'PUZZLE' && (

@@ -8,6 +8,7 @@ import { Users, ChevronRight, StopCircle, QrCode } from 'lucide-react';
 import Leaderboard from '@/components/game/Leaderboard';
 import Podium from '@/components/game/Podium';
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { connectSocket } from '@/lib/socket';
 
 export default function PresentPage() {
@@ -47,6 +48,14 @@ export default function PresentPage() {
       <button onClick={startQuiz} className="btn-primary text-xl px-12 py-5">
         🚀 Iniciar Quiz
       </button>
+
+      <Link
+        href={`/live/${pin}`}
+        target="_blank"
+        className="mt-6 text-gray-400 hover:text-white text-sm underline underline-offset-2 transition-colors"
+      >
+        📺 Abrir dashboard ao vivo (para projetor)
+      </Link>
     </div>
   );
 

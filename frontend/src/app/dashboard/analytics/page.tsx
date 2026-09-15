@@ -71,7 +71,7 @@ export default function AnalyticsPage() {
           </div>
           <div className="card text-center">
             <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
-            <div className="text-3xl font-black">{Math.round(data.questionStats.reduce((s: number, q: any) => s + q.accuracy, 0) / (data.questionStats.length || 1))}%</div>
+            <div className="text-3xl font-black">{(() => { const quiz = data.questionStats.filter((q: any) => q.type === 'TRUE_FALSE' || q.type === 'PUZZLE'); return quiz.length ? Math.round(quiz.reduce((s: number, q: any) => s + q.accuracy, 0) / quiz.length) : '—'; })()}%</div>
             <div className="text-gray-400 text-sm">Taxa de acerto</div>
           </div>
           <div className="card text-center">
@@ -124,8 +124,17 @@ export default function AnalyticsPage() {
                   </div>
                 )}
 
+                {/* Slider stats */}
+                {q.type === 'SLIDER' && q.sliderStats && (
+                  <div className="flex gap-6 text-center py-2">
+                    <div><div className="text-3xl font-black text-brand-400">{q.sliderStats.avg}</div><div className="text-xs text-gray-500">média</div></div>
+                    <div><div className="text-3xl font-black text-gray-300">{q.sliderStats.min}</div><div className="text-xs text-gray-500">mínimo</div></div>
+                    <div><div className="text-3xl font-black text-gray-300">{q.sliderStats.max}</div><div className="text-xs text-gray-500">máximo</div></div>
+                  </div>
+                )}
+
                 {/* Accuracy bar for quiz questions */}
-                {q.type !== 'OPEN_TEXT' && q.type !== 'MULTIPLE_CHOICE' && (
+                {q.type !== 'OPEN_TEXT' && q.type !== 'MULTIPLE_CHOICE' && q.type !== 'SLIDER' && (
                   <>
                     <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                       <div
