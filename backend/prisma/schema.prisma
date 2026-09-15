@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quizzes  Quiz[]
+  sessions QuizSession[]
+}
+
+model Quiz {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  coverUrl    String?
+  theme       Json?
+  isPublic    Boolean  @default(false)
+  randomizeQ  Boolean  @default(false)
+  randomizeA  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id])
+  questions Question[]
+  sessions  QuizSession[]
+}
+
+model Question {
+  id         String       @id @default(cuid())
+  quizId     String
+  quiz       Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type       QuestionType
+  text       String
+  mediaUrl   String?
+  options    Json
+  timeLimit  Int          @default(30)
+  pointsBase Int          @default(1000)
+  order      Int
+  answers    Answer[]
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  OPEN_TEXT
+  SLIDER
+  PUZZLE
+}
+
+model QuizSession {
+  id          String        @id @default(cuid())
+  pin         String        @unique
+  status      SessionStatus @default(WAITING)
+  mode        SessionMode   @default(COMPETITIVE)
+  currentQ    Int           @default(0)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime      @default(now())
+
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+  hostId String
+  host   User   @relation(fields: [hostId], references: [id])
+
+  participants Participant[]
+}
+
+enum SessionStatus {
+  WAITING
+  ACTIVE
+  BETWEEN_QUESTIONS
+  FINISHED
+}
+
+enum SessionMode {
+  COMPETITIVE
+  TEAM
+  SELF_PACED
+}
+
+model Participant {
+  id        String   @id @default(cuid())
+  nickname  String
+  avatar    String
+  score     Int      @default(0)
+  streak    Int      @default(0)
+  teamId    String?
+  joinedAt  DateTime @default(now())
+
+  sessionId String
+  session   QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  answers   Answer[]
+}
+
+model Answer {
+  id             String   @id @default(cuid())
+  value          Json
+  isCorrect      Boolean
+  pointsEarned   Int      @default(0)
+  responseTimeMs Int
+  answeredAt     DateTime @default(now())
+
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id])
+
+  @@unique([participantId, questionId])
+}
