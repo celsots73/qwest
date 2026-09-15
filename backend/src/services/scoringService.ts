@@ -73,9 +73,7 @@ export function isAnswerCorrect(
       return null; // poll mode — records word, no correct/wrong
     }
     case 'SLIDER': {
-      const correctOpt = options.find(o => o.isCorrect);
-      if (!correctOpt) return false;
-      return checkSliderAnswer(Number(value), Number((correctOpt as any).value));
+      return null; // poll mode — records value, no correct/wrong
     }
     case 'PUZZLE': {
       const correct = options.filter(o => o.isCorrect).map(o => o.id);

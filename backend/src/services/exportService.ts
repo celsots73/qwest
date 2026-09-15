@@ -62,6 +62,18 @@ export async function getAnalytics(sessionId: string) {
       }
     }
 
+    let sliderStats: { avg: number; min: number; max: number } | undefined;
+    if (type === 'SLIDER' && answers.length) {
+      const vals = answers.map(a => Number(a.value)).filter(v => !isNaN(v));
+      if (vals.length) {
+        sliderStats = {
+          avg: Math.round(vals.reduce((s, v) => s + v, 0) / vals.length),
+          min: Math.min(...vals),
+          max: Math.max(...vals),
+        };
+      }
+    }
+
     let optionFrequency: Array<{ id: string; text: string; count: number }> | undefined;
     if (type === 'MULTIPLE_CHOICE') {
       const opts = (q as any).options as Array<{ id: string; text: string }>;
@@ -84,6 +96,7 @@ export async function getAnalytics(sessionId: string) {
       avgResponseMs: Math.round(avgTime),
       wordFrequency,
       optionFrequency,
+      sliderStats,
     };
   });
 

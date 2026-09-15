@@ -7,6 +7,18 @@ import { calculateScore, isAnswerCorrect } from '../services/scoringService';
 const prisma = new PrismaClient();
 
 export function registerEvents(io: Server, socket: Socket) {
+  // ── SPECTATOR: joins room read-only ────────────────────────────────────
+  socket.on('spectator:join', async ({ pin }: { pin: string }) => {
+    const room = roomManager.get(pin);
+    if (!room) return socket.emit('error', { msg: 'Room not found' });
+    socket.join(pin);
+    socket.emit('spectator:joined', {
+      status: room.status,
+      currentQ: room.currentQ,
+      totalParticipants: room.totalParticipants,
+    });
+  });
+
   // ── HOST: creates room after PIN is issued ──────────────────────────────
   socket.on('host:join', async ({ pin }: { pin: string }) => {
     const session = await getSessionByPin(pin);
@@ -112,11 +124,43 @@ export function registerEvents(io: Server, socket: Socket) {
       pointsEarned, comboBonus, timeBonus, newStreak,
     });
 
-    // notify host of live answer count
-    io.to(room.hostSocketId).emit('host:answer_count', {
-      count: newAnswerCount,
-      total: room.totalParticipants,
-    });
+    // broadcast answer count to whole room (spectators + host)
+    io.to(pin).emit('room:answer_count', { count: newAnswerCount, total: room.totalParticipants });
+    // keep legacy host-only event for backward compat
+    io.to(room.hostSocketId).emit('host:answer_count', { count: newAnswerCount, total: room.totalParticipants });
+
+    // for poll questions, broadcast live vote distribution
+    if (isPoll) {
+      const sessionAnswers = await prisma.answer.findMany({
+        where: { questionId: question.id, participant: { sessionId: room.sessionId } },
+        select: { value: true },
+      });
+
+      if (question.type === 'MULTIPLE_CHOICE') {
+        const opts = (question.options as any[]);
+        const counts: Record<string, number> = {};
+        for (const a of sessionAnswers) {
+          const ids: string[] = Array.isArray(a.value) ? (a.value as string[]) : [String(a.value)];
+          for (const id of ids) counts[id] = (counts[id] || 0) + 1;
+        }
+        io.to(pin).emit('room:vote_update', {
+          type: 'MULTIPLE_CHOICE',
+          distribution: opts.map((o: any) => ({ id: o.id, text: o.text, count: counts[o.id] || 0 })),
+          totalAnswers: sessionAnswers.length,
+        });
+      } else if (question.type === 'OPEN_TEXT') {
+        const freq: Record<string, number> = {};
+        for (const a of sessionAnswers) {
+          const word = String(a.value ?? '').toLowerCase().trim();
+          if (word) freq[word] = (freq[word] || 0) + 1;
+        }
+        io.to(pin).emit('room:vote_update', { type: 'OPEN_TEXT', wordFrequency: freq, totalAnswers: sessionAnswers.length });
+      } else if (question.type === 'SLIDER') {
+        const vals = sessionAnswers.map(a => Number(a.value)).filter(v => !isNaN(v));
+        const avg = vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : 0;
+        io.to(pin).emit('room:vote_update', { type: 'SLIDER', avg, min: Math.min(...vals), max: Math.max(...vals), totalAnswers: vals.length });
+      }
+    }
   });
 
   // ── HOST: moves to next question ────────────────────────────────────────
