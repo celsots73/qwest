@@ -14,8 +14,9 @@ import { connectSocket } from '@/lib/socket';
 export default function PresentPage() {
   const sp = useSearchParams();
   const pin = sp.get('pin') || '';
+  const maxParticipants = Number(sp.get('max') || '0');
   const store = useGameStore();
-  const { startQuiz, nextQuestion, endQuiz } = useHostSocket(pin);
+  const { startQuiz, nextQuestion, endQuiz } = useHostSocket(pin, maxParticipants);
 
   const { remaining, pct } = useTimer(
     store.currentQuestion?.timeLimit ?? 30,

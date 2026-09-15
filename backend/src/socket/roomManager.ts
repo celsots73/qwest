@@ -10,12 +10,13 @@ export interface RoomState {
   status: 'waiting' | 'active' | 'between' | 'finished';
   answerCount: number;
   totalParticipants: number;
+  maxParticipants: number; // 0 = unlimited
 }
 
 const rooms = new Map<string, RoomState>(); // key = pin
 
 export const roomManager = {
-  create(pin: string, sessionId: string, hostSocketId: string): RoomState {
+  create(pin: string, sessionId: string, hostSocketId: string, maxParticipants = 0): RoomState {
     const state: RoomState = {
       pin,
       sessionId,
@@ -25,6 +26,7 @@ export const roomManager = {
       status: 'waiting',
       answerCount: 0,
       totalParticipants: 0,
+      maxParticipants,
     };
     rooms.set(pin, state);
     return state;

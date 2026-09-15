@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const qc = useQueryClient();
+  const [startConfig, setStartConfig] = useState<{ quizId: string; max: number } | null>(null);
 
   useEffect(() => { if (!user) router.replace('/login'); }, [user]);
 
@@ -45,8 +46,9 @@ export default function DashboardPage() {
   });
 
   const startMutation = useMutation({
-    mutationFn: (quizId: string) => sessionApi.create(quizId),
-    onSuccess: (session) => router.push(`/quiz/${session.quizId}/present?session=${session.id}&pin=${session.pin}`),
+    mutationFn: ({ quizId }: { quizId: string; max: number }) => sessionApi.create(quizId),
+    onSuccess: (session, { max }) =>
+      router.push(`/quiz/${session.quizId}/present?session=${session.id}&pin=${session.pin}&max=${max}`),
   });
 
   if (!user) return null;
@@ -108,13 +110,30 @@ export default function DashboardPage() {
               </p>
 
               <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => startMutation.mutate(quiz.id)}
-                  disabled={startMutation.isPending}
-                  className="flex-1 btn-primary py-2 text-sm flex items-center justify-center gap-1"
-                >
-                  <Play className="w-3.5 h-3.5" /> Jogar
-                </button>
+                {startConfig?.quizId === quiz.id ? (
+                  <>
+                    <input
+                      type="number" min={0} max={500} value={startConfig.max}
+                      onChange={e => setStartConfig({ ...startConfig, max: Number(e.target.value) })}
+                      placeholder="Máx. (0=∞)"
+                      className="input-field py-1.5 text-sm flex-1 min-w-0"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => { startMutation.mutate({ quizId: quiz.id, max: startConfig.max }); setStartConfig(null); }}
+                      disabled={startMutation.isPending}
+                      className="btn-primary py-2 px-3 text-sm"
+                    ><Play className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setStartConfig(null)} className="btn-ghost py-2 px-3 text-sm">✕</button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setStartConfig({ quizId: quiz.id, max: 0 })}
+                    className="flex-1 btn-primary py-2 text-sm flex items-center justify-center gap-1"
+                  >
+                    <Play className="w-3.5 h-3.5" /> Jogar
+                  </button>
+                )}
                 <Link href={`/quiz/${quiz.id}/edit`} className="btn-ghost py-2 px-3 text-sm">
                   <Pencil className="w-4 h-4" />
                 </Link>

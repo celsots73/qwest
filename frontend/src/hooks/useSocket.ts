@@ -3,13 +3,13 @@ import { useEffect } from 'react';
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket';
 import { useGameStore } from '@/stores/gameStore';
 
-export function useHostSocket(pin: string) {
+export function useHostSocket(pin: string, maxParticipants = 0) {
   const store = useGameStore();
   const socket = connectSocket();
 
   useEffect(() => {
     store.reset();
-    socket.emit('host:join', { pin });
+    socket.emit('host:join', { pin, maxParticipants });
 
     socket.on('game:question', (data) => store.setQuestion(data));
     socket.on('game:leaderboard', ({ leaderboard }) => store.setLeaderboard(leaderboard));
@@ -33,7 +33,7 @@ export function useHostSocket(pin: string) {
   return { startQuiz, nextQuestion, endQuiz };
 }
 
-export function usePlayerSocket(pin: string, nickname: string, avatar: string) {
+export function usePlayerSocket(pin: string, nickname: string, avatar: string, onError?: (msg: string) => void) {
   const store = useGameStore();
   const socket = connectSocket();
 
@@ -47,9 +47,10 @@ export function usePlayerSocket(pin: string, nickname: string, avatar: string) {
     socket.on('player:answer_result', (r) => store.setAnswerResult(r));
     socket.on('game:leaderboard', ({ leaderboard }) => store.setLeaderboard(leaderboard));
     socket.on('game:end', ({ leaderboard }) => { store.setLeaderboard(leaderboard); store.setPhase('podium'); });
+    socket.on('error', ({ msg }: { msg: string }) => onError?.(msg));
 
     return () => {
-      ['player:joined', 'game:start', 'game:question', 'player:answer_result', 'game:leaderboard', 'game:end']
+      ['player:joined', 'game:start', 'game:question', 'player:answer_result', 'game:leaderboard', 'game:end', 'error']
         .forEach(e => socket.off(e));
     };
   }, [pin]);

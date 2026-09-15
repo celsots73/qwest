@@ -24,11 +24,12 @@ export default function PlayerGamePage() {
   const [sliderVal, setSliderVal] = useState(50);
   const [openText, setOpenText] = useState('');
   const [puzzleOrder, setPuzzleOrder] = useState<string[]>([]);
+  const [socketError, setSocketError] = useState<string | null>(null);
 
   const nickname = typeof window !== 'undefined' ? (sessionStorage.getItem('qwest_nickname') || 'Jogador') : 'Jogador';
   const avatar = typeof window !== 'undefined' ? (sessionStorage.getItem('qwest_avatar') || '🦊') : '🦊';
 
-  const { submitAnswer } = usePlayerSocket(pin, nickname, avatar);
+  const { submitAnswer } = usePlayerSocket(pin, nickname, avatar, setSocketError);
 
   const { remaining, pct } = useTimer(
     store.currentQuestion?.timeLimit ?? 30,
@@ -79,6 +80,19 @@ export default function PlayerGamePage() {
     if (!q || answered) return;
     handleSubmit([optId]);
   };
+
+  if (socketError) return (
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-white text-center p-6">
+      <div className="text-7xl mb-6">🚫</div>
+      <h2 className="text-2xl font-black mb-2">
+        {socketError === 'Room is full' ? 'Sala cheia!' : 'Erro ao entrar'}
+      </h2>
+      <p className="text-gray-400 mb-6">
+        {socketError === 'Room is full' ? 'O número máximo de participantes foi atingido.' : socketError}
+      </p>
+      <button onClick={() => router.back()} className="btn-primary">Voltar</button>
+    </div>
+  );
 
   if (store.phase === 'podium') return <Podium leaderboard={store.leaderboard} me={store.myParticipant} />;
 

@@ -20,12 +20,12 @@ export function registerEvents(io: Server, socket: Socket) {
   });
 
   // ── HOST: creates room after PIN is issued ──────────────────────────────
-  socket.on('host:join', async ({ pin }: { pin: string }) => {
+  socket.on('host:join', async ({ pin, maxParticipants }: { pin: string; maxParticipants?: number }) => {
     const session = await getSessionByPin(pin);
     if (!session) return socket.emit('error', { msg: 'Session not found' });
 
     socket.join(pin);
-    roomManager.create(pin, session.id, socket.id);
+    roomManager.create(pin, session.id, socket.id, maxParticipants ?? 0);
     socket.emit('host:joined', { session });
   });
 
@@ -34,6 +34,9 @@ export function registerEvents(io: Server, socket: Socket) {
     const room = roomManager.get(pin);
     if (!room) return socket.emit('error', { msg: 'Room not found' });
     if (room.status !== 'waiting') return socket.emit('error', { msg: 'Game already started' });
+    if (room.maxParticipants > 0 && room.totalParticipants >= room.maxParticipants) {
+      return socket.emit('error', { msg: 'Room is full' });
+    }
 
     const participant = await prisma.participant.create({
       data: { sessionId: room.sessionId, nickname, avatar },
@@ -130,11 +133,11 @@ export function registerEvents(io: Server, socket: Socket) {
     io.to(room.hostSocketId).emit('host:answer_count', { count: newAnswerCount, total: room.totalParticipants });
 
     // broadcast live vote distribution for all visual question types
-    const needsVoteUpdate = isPoll || question.type === 'TRUE_FALSE';
+    const needsVoteUpdate = isPoll || question.type === 'TRUE_FALSE' || question.type === 'PUZZLE';
     if (needsVoteUpdate) {
       const sessionAnswers = await prisma.answer.findMany({
         where: { questionId: question.id, participant: { sessionId: room.sessionId } },
-        select: { value: true },
+        select: { value: true, isCorrect: true },
       });
 
       const opts = (question.options as any[]);
@@ -163,6 +166,14 @@ export function registerEvents(io: Server, socket: Socket) {
         const safeMin = vals.length ? Math.min(...vals) : 0;
         const safeMax = vals.length ? Math.max(...vals) : 0;
         io.to(pin).emit('room:vote_update', { type: 'SLIDER', avg, min: safeMin, max: safeMax, totalAnswers: vals.length });
+      } else if (question.type === 'PUZZLE') {
+        const correctCount = sessionAnswers.filter(a => a.isCorrect).length;
+        io.to(pin).emit('room:vote_update', {
+          type: 'PUZZLE',
+          correctCount,
+          incorrectCount: sessionAnswers.length - correctCount,
+          totalAnswers: sessionAnswers.length,
+        });
       }
     }
   });

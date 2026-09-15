@@ -5,21 +5,25 @@ import Link from 'next/link';
 import { ArrowLeft, Download, Users, CheckCircle, Clock } from 'lucide-react';
 import { reportApi } from '@/lib/api';
 
+const CLOUD_COLORS = ['#9333ea', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316'];
+
 function WordCloud({ freq }: { freq: Record<string, number> }) {
-  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 40);
   if (!entries.length) return <p className="text-gray-500 text-sm">Sem respostas ainda.</p>;
   const max = entries[0][1];
   return (
-    <div className="flex flex-wrap gap-2 py-2">
-      {entries.map(([word, count]) => {
-        const size = 0.75 + (count / max) * 1.5; // 0.75rem to 2.25rem
-        const opacity = 0.5 + (count / max) * 0.5;
+    <div className="flex flex-wrap gap-2 items-center py-3">
+      {entries.map(([word, count], i) => {
+        const ratio = max > 1 ? count / max : Math.max(0.25, 1 - word.length / 16);
+        const size = 0.75 + ratio * 1.75;
+        const color = CLOUD_COLORS[i % CLOUD_COLORS.length];
+        const rotate = ((word.charCodeAt(0) % 7) - 3) * 6;
         return (
           <span
             key={word}
             title={`${count} voto${count > 1 ? 's' : ''}`}
-            style={{ fontSize: `${size}rem`, opacity }}
-            className="font-bold text-brand-400 cursor-default"
+            style={{ fontSize: `${size}rem`, color, transform: `rotate(${rotate}deg)`, display: 'inline-block' }}
+            className="font-bold cursor-default"
           >
             {word}
           </span>

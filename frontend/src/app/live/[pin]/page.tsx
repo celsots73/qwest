@@ -7,26 +7,38 @@ import { connectSocket } from '@/lib/socket';
 type Phase = 'lobby' | 'question' | 'leaderboard' | 'podium';
 
 interface VoteUpdate {
-  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'OPEN_TEXT' | 'SLIDER';
+  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'OPEN_TEXT' | 'SLIDER' | 'PUZZLE';
   distribution?: Array<{ id: string; text: string; count: number }>;
   wordFrequency?: Record<string, number>;
   avg?: number; min?: number; max?: number;
+  correctCount?: number; incorrectCount?: number;
   totalAnswers: number;
 }
 
 const OPT_COLORS = ['#ef4444', '#3b82f6', '#eab308', '#22c55e', '#ec4899', '#06b6d4'];
 
+const CLOUD_COLORS = ['#9333ea', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316'];
+
 function WordCloud({ freq }: { freq: Record<string, number> }) {
-  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 30);
-  if (!entries.length) return <p className="text-gray-500 text-center">Aguardando respostas…</p>;
+  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 40);
+  if (!entries.length) return <p className="text-gray-500 text-center">Aguardando palavras…</p>;
   const max = entries[0][1];
   return (
-    <div className="flex flex-wrap gap-3 justify-center py-4 max-w-3xl mx-auto">
-      {entries.map(([word, count]) => {
-        const size = 1.2 + (count / max) * 2.5;
-        const opacity = 0.5 + (count / max) * 0.5;
+    <div className="flex flex-wrap gap-3 justify-center items-center py-4 max-w-3xl mx-auto">
+      {entries.map(([word, count], i) => {
+        // when all words have freq=1, vary size by word length (shorter = bigger = simpler word)
+        const ratio = max > 1 ? count / max : Math.max(0.25, 1 - word.length / 16);
+        const size = 1.0 + ratio * 2.8;
+        const color = CLOUD_COLORS[i % CLOUD_COLORS.length];
+        // stable rotation derived from word chars so it doesn't jump on re-render
+        const rotate = ((word.charCodeAt(0) % 7) - 3) * 6;
         return (
-          <span key={word} style={{ fontSize: `${size}rem`, opacity }} className="font-black text-brand-400">
+          <span
+            key={word}
+            title={`${count}×`}
+            style={{ fontSize: `${size}rem`, color, transform: `rotate(${rotate}deg)`, display: 'inline-block' }}
+            className="font-black cursor-default transition-all duration-500"
+          >
             {word}
           </span>
         );
@@ -151,7 +163,7 @@ export default function LivePage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (phase === 'question' && question) {
     const q = question.question;
-    const isPollType = q.type === 'MULTIPLE_CHOICE' || q.type === 'TRUE_FALSE' || q.type === 'OPEN_TEXT' || q.type === 'SLIDER';
+    const isPollType = q.type === 'MULTIPLE_CHOICE' || q.type === 'TRUE_FALSE' || q.type === 'OPEN_TEXT' || q.type === 'SLIDER' || q.type === 'PUZZLE';
 
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col">
@@ -235,18 +247,38 @@ export default function LivePage() {
               </motion.div>
             )}
 
-            {/* PUZZLE — just show options */}
-            {!isPollType && (
-              <motion.div key="quiz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-4 w-full">
-                {q.options.map((opt: any, i: number) => (
-                  <div
-                    key={opt.id}
-                    className="rounded-2xl p-5 text-center font-bold text-xl text-white shadow-lg"
-                    style={{ backgroundColor: OPT_COLORS[i] }}
-                  >
-                    {opt.text}
-                  </div>
-                ))}
+            {/* PUZZLE — correct vs incorrect live tally */}
+            {q.type === 'PUZZLE' && (
+              <motion.div key="pz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: '✅ Acertaram', count: voteUpdate?.correctCount ?? 0, color: '#22c55e' },
+                    { label: '❌ Erraram', count: voteUpdate?.incorrectCount ?? 0, color: '#ef4444' },
+                  ].map(({ label, count, color }) => {
+                    const total = voteUpdate?.totalAnswers ?? 0;
+                    const pct = total ? (count / total) * 100 : 0;
+                    return (
+                      <div key={label}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-bold">{label}</span>
+                          <span className="text-gray-400">{count}</span>
+                        </div>
+                        <div className="h-10 bg-gray-800 rounded-xl overflow-hidden">
+                          <motion.div className="h-full rounded-xl" style={{ backgroundColor: color, width: `${pct}%` }} animate={{ width: `${pct}%` }} transition={{ duration: 0.4 }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-gray-500 text-sm text-right">{voteUpdate?.totalAnswers ?? 0} resposta{(voteUpdate?.totalAnswers ?? 0) !== 1 ? 's' : ''}</p>
+                <div className="mt-2 space-y-1">
+                  {q.options.map((opt: any, i: number) => (
+                    <div key={opt.id} className="flex items-center gap-3 text-sm">
+                      <span className="text-gray-500 w-4">{i + 1}.</span>
+                      <span className="text-gray-300">{opt.text}</span>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
