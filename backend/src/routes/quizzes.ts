@@ -79,20 +79,32 @@ router.put('/:id', requireAuth, validate(quizSchema.partial()), async (req: Auth
 
   const { questions, ...data } = req.body;
 
-  const updated = await prisma.quiz.update({
-    where: { id: req.params.id },
-    data: {
-      ...data,
-      ...(questions && {
-        questions: {
-          deleteMany: {},
-          create: questions,
-        },
-      }),
-    },
-    include: { questions: { orderBy: { order: 'asc' } } },
-  });
-  res.json(updated);
+  try {
+    if (questions) {
+      // Delete answers first to avoid FK constraint when replacing questions
+      const existing = await prisma.question.findMany({ where: { quizId: req.params.id }, select: { id: true } });
+      if (existing.length) {
+        await prisma.answer.deleteMany({ where: { questionId: { in: existing.map(q => q.id) } } });
+      }
+    }
+
+    const updated = await prisma.quiz.update({
+      where: { id: req.params.id },
+      data: {
+        ...data,
+        ...(questions && {
+          questions: {
+            deleteMany: {},
+            create: questions,
+          },
+        }),
+      },
+      include: { questions: { orderBy: { order: 'asc' } } },
+    });
+    res.json(updated);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message || 'Failed to update quiz' });
+  }
 });
 
 // Delete quiz

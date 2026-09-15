@@ -70,9 +70,7 @@ export function isAnswerCorrect(
       );
     }
     case 'OPEN_TEXT': {
-      const correctOpt = options.find(o => o.isCorrect);
-      if (!correctOpt) return false;
-      return checkOpenAnswer(String(value), (correctOpt as any).text);
+      return null; // poll mode — records word, no correct/wrong
     }
     case 'SLIDER': {
       const correctOpt = options.find(o => o.isCorrect);
