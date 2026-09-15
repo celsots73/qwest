@@ -136,15 +136,7 @@ export default function QuestionCard({ question, index, onChange, onRemove }: Pr
       )}
 
       {question.type === 'OPEN_TEXT' && (
-        <div>
-          <label className="text-xs text-gray-500 mb-1 block">Resposta correta (texto exato ou palavra-chave)</label>
-          <input
-            value={question.options[0]?.text || ''}
-            onChange={e => update({ options: [{ ...question.options[0], text: e.target.value, isCorrect: true }] })}
-            placeholder="Resposta esperada…"
-            className="input-field"
-          />
-        </div>
+        <p className="text-xs text-blue-400">Enquete de palavra — os respondentes digitam uma palavra livre. Aparece como nuvem de palavras no dashboard.</p>
       )}
 
       {question.type === 'SLIDER' && (

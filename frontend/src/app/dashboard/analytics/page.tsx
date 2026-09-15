@@ -5,6 +5,30 @@ import Link from 'next/link';
 import { ArrowLeft, Download, Users, CheckCircle, Clock } from 'lucide-react';
 import { reportApi } from '@/lib/api';
 
+function WordCloud({ freq }: { freq: Record<string, number> }) {
+  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return <p className="text-gray-500 text-sm">Sem respostas ainda.</p>;
+  const max = entries[0][1];
+  return (
+    <div className="flex flex-wrap gap-2 py-2">
+      {entries.map(([word, count]) => {
+        const size = 0.75 + (count / max) * 1.5; // 0.75rem to 2.25rem
+        const opacity = 0.5 + (count / max) * 0.5;
+        return (
+          <span
+            key={word}
+            title={`${count} voto${count > 1 ? 's' : ''}`}
+            style={{ fontSize: `${size}rem`, opacity }}
+            className="font-bold text-brand-400 cursor-default"
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const sp = useSearchParams();
   const sessionId = sp.get('session') || '';
@@ -68,19 +92,53 @@ export default function AnalyticsPage() {
                     <span className="text-xs text-gray-500 mr-2">#{i + 1}</span>
                     <span className="text-sm font-medium">{q.text}</span>
                   </div>
-                  <div className="text-right ml-4 flex-shrink-0">
-                    <div className="text-lg font-black text-brand-400">{Math.round(q.accuracy)}%</div>
-                    <div className="text-xs text-gray-500">{q.correctCount}/{q.totalAnswers}</div>
+                  {q.type !== 'OPEN_TEXT' && q.type !== 'MULTIPLE_CHOICE' && (
+                    <div className="text-right ml-4 flex-shrink-0">
+                      <div className="text-lg font-black text-brand-400">{Math.round(q.accuracy)}%</div>
+                      <div className="text-xs text-gray-500">{q.correctCount}/{q.totalAnswers}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Word cloud for OPEN_TEXT */}
+                {q.type === 'OPEN_TEXT' && q.wordFrequency && (
+                  <WordCloud freq={q.wordFrequency} />
+                )}
+
+                {/* Option bars for MULTIPLE_CHOICE */}
+                {q.type === 'MULTIPLE_CHOICE' && q.optionFrequency && (
+                  <div className="space-y-2">
+                    {q.optionFrequency.map((opt: any) => (
+                      <div key={opt.id}>
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>{opt.text}</span><span>{opt.count}</span>
+                        </div>
+                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-brand-500 transition-all"
+                            style={{ width: q.totalAnswers ? `${(opt.count / q.totalAnswers) * 100}%` : '0%' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                )}
+
+                {/* Accuracy bar for quiz questions */}
+                {q.type !== 'OPEN_TEXT' && q.type !== 'MULTIPLE_CHOICE' && (
+                  <>
+                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${q.accuracy}%`, background: q.accuracy > 60 ? '#10b981' : q.accuracy > 30 ? '#f59e0b' : '#ef4444' }}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="text-xs text-gray-500 mt-2">
+                  {q.totalAnswers} respostas · Tempo médio: {(q.avgResponseMs / 1000).toFixed(1)}s
                 </div>
-                {/* Accuracy bar */}
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${q.accuracy}%`, background: q.accuracy > 60 ? '#10b981' : q.accuracy > 30 ? '#f59e0b' : '#ef4444' }}
-                  />
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Tempo médio: {(q.avgResponseMs / 1000).toFixed(1)}s</div>
               </div>
             ))}
           </div>

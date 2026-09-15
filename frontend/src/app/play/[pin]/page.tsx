@@ -141,18 +141,24 @@ export default function PlayerGamePage() {
                 </div>
               )}
 
-              {/* Open text */}
+              {/* Open text — single word poll */}
               {q.question.type === 'OPEN_TEXT' && (
                 <div className="flex flex-col gap-3 flex-1">
+                  <p className="text-gray-400 text-sm text-center">Digite uma palavra</p>
                   <input
                     value={openText}
-                    onChange={e => setOpenText(e.target.value)}
-                    placeholder="Digite sua resposta…"
-                    className="input-field text-lg"
+                    onChange={e => setOpenText(e.target.value.replace(/\s/g, ''))}
+                    placeholder="sua palavra…"
+                    className="input-field text-lg text-center"
+                    maxLength={40}
                     autoFocus
                   />
-                  <button onClick={() => handleSubmit(openText)} className="btn-primary py-4 text-lg">
-                    Confirmar resposta
+                  <button
+                    onClick={() => handleSubmit(openText.trim())}
+                    disabled={!openText.trim()}
+                    className="btn-primary py-4 text-lg disabled:opacity-40"
+                  >
+                    Confirmar
                   </button>
                 </div>
               )}

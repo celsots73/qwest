@@ -39,7 +39,7 @@ function newQuestion(type: QuestionType, order: number): Question {
     { id: crypto.randomUUID(), text: '', isCorrect: false },
     { id: crypto.randomUUID(), text: '', isCorrect: false },
   ]};
-  return { ...base, options: [{ id: crypto.randomUUID(), text: '', isCorrect: true }] };
+  return { ...base, options: [{ id: crypto.randomUUID(), text: '', isCorrect: false }] };
 }
 
 export default function QuizEditor({ quizId, initialData, onSave, isSaving, onRefresh }: Props) {
