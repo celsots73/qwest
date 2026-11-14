@@ -3,34 +3,95 @@
 @tailwind utilities;
 
 :root {
-  --brand: #9333ea;
-  --brand-dark: #7e22ce;
+  --brand:      #6657FF;
+  --brand-dark: #5244E8;
+  --brand-glow: rgba(102, 87, 255, 0.35);
+  --surface:    #131220;
+  --surface-raised: #1D1C2E;
 }
 
-body {
-  @apply bg-gray-950 text-white antialiased;
+@layer base {
+  body {
+    @apply bg-gray-950 text-white antialiased;
+    font-feature-settings: 'cv11' on, 'ss01' on;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
+  }
 }
 
-.btn-primary {
-  @apply bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
-}
+@layer components {
+  /* ── Buttons ───────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center gap-2 font-semibold
+           px-6 py-3 rounded-xl transition-all duration-200
+           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+    background: linear-gradient(135deg, #7B6EFF 0%, #6657FF 50%, #5244E8 100%);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  .btn-primary:not(:disabled):hover {
+    background: linear-gradient(135deg, #9B8FFF 0%, #7B6EFF 50%, #6657FF 100%);
+    box-shadow: 0 4px 24px var(--brand-glow), 0 0 0 1px rgba(255,255,255,0.12) inset;
+    transform: translateY(-1px);
+  }
+  .btn-primary:not(:disabled):active {
+    transform: translateY(0) scale(0.97);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
 
-.btn-ghost {
-  @apply bg-white/10 hover:bg-white/20 text-white font-medium px-6 py-3 rounded-xl transition-all;
-}
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 font-medium
+           px-6 py-3 rounded-xl transition-all duration-200;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+  }
 
-.card {
-  @apply bg-gray-900 border border-white/10 rounded-2xl p-6;
-}
+  /* ── Cards ─────────────────────────────────────────────────────── */
+  .card {
+    @apply rounded-2xl p-6;
+    background: var(--surface);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.07) inset, 0 2px 8px rgba(0,0,0,0.4);
+  }
 
-.input-field {
-  @apply bg-gray-800 border border-white/10 rounded-xl px-4 py-3 w-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all;
-}
+  /* gradient-border card — premium highlight variant */
+  .card-glow {
+    @apply rounded-2xl p-6;
+    background: linear-gradient(var(--surface), var(--surface)) padding-box,
+                linear-gradient(135deg, rgba(102,87,255,0.5) 0%, rgba(255,255,255,0.05) 100%) border-box;
+    border: 1px solid transparent;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5), 0 0 60px rgba(102,87,255,0.08);
+  }
 
-/* answer option colors (Kahoot-style) */
-.opt-0 { @apply bg-red-500 hover:bg-red-400; }
-.opt-1 { @apply bg-blue-500 hover:bg-blue-400; }
-.opt-2 { @apply bg-yellow-500 hover:bg-yellow-400 text-gray-900; }
-.opt-3 { @apply bg-green-500 hover:bg-green-400; }
-.opt-4 { @apply bg-pink-500 hover:bg-pink-400; }
-.opt-5 { @apply bg-cyan-500 hover:bg-cyan-400; }
+  /* ── Inputs ─────────────────────────────────────────────────────── */
+  .input-field {
+    @apply rounded-xl px-4 py-3 w-full text-white placeholder-gray-500 transition-all duration-200;
+    background: var(--surface-raised);
+    border: 1px solid rgba(255,255,255,0.08);
+    outline: none;
+  }
+  .input-field:focus {
+    border-color: rgba(102, 87, 255, 0.6);
+    box-shadow: 0 0 0 3px rgba(102, 87, 255, 0.15);
+  }
+
+  /* ── Answer options ─────────────────────────────────────────────── */
+  .opt-0 { background: #E63950; color: white; }
+  .opt-0:hover { background: #F04460; }
+  .opt-1 { background: #2D6BE4; color: white; }
+  .opt-1:hover { background: #3B7AF0; }
+  .opt-2 { background: #E8A020; color: #111; }
+  .opt-2:hover { background: #F5AC2A; color: #111; }
+  .opt-3 { background: #18A86B; color: white; }
+  .opt-3:hover { background: #21BE7B; }
+  .opt-4 { background: #D44FBB; color: white; }
+  .opt-4:hover { background: #E05CC8; }
+  .opt-5 { background: #0599C2; color: white; }
+  .opt-5:hover { background: #0BACD6; }
+}
