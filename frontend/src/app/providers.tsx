@@ -10,6 +10,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // ping backend on load so Render wakes up before the user submits a form
+    fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:4000'}/health`).catch(() => {});
     hydrate().finally(() => setReady(true));
   }, []);
 
